@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karabük Lezzet AI</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 50px; }
+        .container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
+        h1 { color: #333; }
+        input { width: 80%; padding: 12px; margin: 20px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { background-color: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: background 0.3s; }
+        button:hover { background-color: #0056b3; }
+        #loading { display: none; margin-top: 20px; color: #666; }
+        #result { display: none; margin-top: 30px; text-align: left; }
+        .score-box { background: #e8f5e9; padding: 15px; border-radius: 8px; text-align: center; font-size: 24px; font-weight: bold; color: #2e7d32; margin-bottom: 20px; }
+        .review-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 14px; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .pozitif { background-color: #c8e6c9; color: #256029; }
+        .negatif { background-color: #ffcdd2; color: #c63737; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Karabük Lezzet Analizcisi</h1>
+        <p>Mekanın Google Maps linkini yapıştır, yapay zeka gerçek puanını hesaplasın.</p>
+        
+        <input type="text" id="urlInput" placeholder="https://maps.google.com/...">
+        <br>
+        <button onclick="analyze()">Analiz Et</button>
+
+        <div id="loading">Veriler çekiliyor ve Yapay Zeka düşünüyor...<br>(Bu işlem 15-20 saniye sürebilir)</div>
+
+        <div id="result">
+            <div class="score-box" id="aiScore"></div>
+            <h3>Analiz Edilen Yorumlar:</h3>
+            <div id="reviewsList"></div>
+        </div>
+    </div>
+
+    <script>
+        async function analyze() {
+            const url = document.getElementById('urlInput').value;
+            const loading = document.getElementById('loading');
+            const resultDiv = document.getElementById('result');
+            
+            if(!url) return alert("Lütfen bir link girin!");
+
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                const data = await response.json();
+                
+                if(data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('aiScore').innerText = "AI Puanı: " + data.rating;
+                    
+                    const list = document.getElementById('reviewsList');
+                    list.innerHTML = "";
+                    
+                    data.reviews.forEach(r => {
+                        const div = document.createElement('div');
+                        div.className = 'review-item';
+                        const badgeClass = r.status === 'Pozitif' ? 'pozitif' : 'negatif';
+                        div.innerHTML = `<span class="badge ${badgeClass}">${r.status}</span> ${r.text}`;
+                        list.appendChild(div);
+                    });
+                    
+                    resultDiv.style.display = 'block';
+                }
+            } catch (e) {
+                alert("Sunucu hatası! Linki kontrol edin.");
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
